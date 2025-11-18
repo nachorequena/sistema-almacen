@@ -1,0 +1,277 @@
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import {
+  getDoc,
+  updateDoc,
+  doc,
+  collection,
+  getDocs,
+} from "firebase/firestore";
+import { db } from "../../firebaseConfig";
+import Swal from "sweetalert2";
+import { Card, Label, TextInput, Button, Select, Radio } from "flowbite-react";
+
+const Edit = () => {
+  const [description, setDescription] = useState("");
+  const [precio, setPrecio] = useState("");
+  const [costo, setCosto] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [categorias, setCategorias] = useState([]);
+  const [codigoBarra, setCodigoBarra] = useState("");
+  const [atajo, setAtajo] = useState("");
+  const [unidadVenta, setUnidadVenta] = useState("");
+  const [tipoProducto, setTipoProducto] = useState("codigo");
+  const navigate = useNavigate();
+  const { id } = useParams();
+
+  const getCategorias = async () => {
+    const snapshot = await getDocs(collection(db, "categorias"));
+    const lista = snapshot.docs.map((doc) => doc.data().nombre.toLowerCase());
+    setCategorias(lista);
+  };
+
+  const getProductById = async (id) => {
+    const productRef = doc(db, "products", id);
+    const snap = await getDoc(productRef);
+    if (snap.exists()) {
+      const data = snap.data();
+      setDescription(data.description);
+      setPrecio(data.precio);
+      setCosto(data.costo);
+      setCategoria(data.categoria);
+      setCodigoBarra(data.codigoBarra || "");
+      setAtajo(data.atajo || "");
+      setUnidadVenta(data.unidadVenta || "");
+      setTipoProducto(data.atajo ? "atajo" : "codigo");
+    } else {
+      Swal.fire("Error", "El producto no existe", "error");
+      navigate("/productos");
+    }
+  };
+
+  const verificarAtajoDuplicado = async (nuevoAtajo) => {
+    const atajoLower = nuevoAtajo.toLowerCase();
+
+    const [productosSnap, rubrosSnap] = await Promise.all([
+      getDocs(collection(db, "products")),
+      getDocs(collection(db, "rubros")),
+    ]);
+
+    const productosAtajos = productosSnap.docs
+      .filter((doc) => doc.id !== id) // excluye el producto actual
+      .map((doc) => doc.data().atajo?.toLowerCase());
+
+    const rubrosAtajos = rubrosSnap.docs.map((doc) =>
+      doc.data().atajo?.toLowerCase()
+    );
+
+    return [...productosAtajos, ...rubrosAtajos].includes(atajoLower);
+  };
+
+  const update = async (e) => {
+    e.preventDefault();
+
+    if (!description || precio === "" || costo === "") {
+      Swal.fire("Error", "Todos los campos son obligatorios", "error");
+      return;
+    }
+
+    if (Number(precio) < Number(costo)) {
+      Swal.fire(
+        "Error",
+        "El precio de costo no puede ser mayor al precio de venta",
+        "error"
+      );
+      return;
+    }
+
+    if (tipoProducto === "atajo" && atajo) {
+      const atajoDuplicado = await verificarAtajoDuplicado(atajo);
+      if (atajoDuplicado) {
+        Swal.fire("Error", "El atajo ya está en uso", "error");
+        return;
+      }
+    }
+
+    const productRef = doc(db, "products", id);
+    const data = {
+      description,
+      precio: Number(precio),
+      costo: Number(costo),
+      ganancia: Number(precio) - Number(costo),
+      categoria: categoria.toLowerCase(),
+      codigoBarra: tipoProducto === "codigo" ? codigoBarra : null,
+      atajo: tipoProducto === "atajo" ? atajo.toLowerCase() : null,
+      unidadVenta: tipoProducto === "atajo" ? unidadVenta : null,
+    };
+
+    await updateDoc(productRef, data);
+    Swal.fire("Actualizado", "Producto actualizado correctamente", "success");
+    navigate("/productos");
+  };
+
+  useEffect(() => {
+    if (id) getProductById(id);
+    getCategorias();
+  }, [id]);
+
+  return (
+    <div className="flex justify-center mt-10">
+      <Card className="w-full max-w-md">
+        <form onSubmit={update}>
+          <h1 className="text-2xl font-bold mb-4 text-center text-black">
+            Editar Producto
+          </h1>
+
+          <div className="mb-4">
+            <Label htmlFor="description">Nombre:</Label>
+            <TextInput
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="mb-4">
+            <Label htmlFor="precio">Precio de venta:</Label>
+            <TextInput
+              id="precio"
+              type="number"
+              value={precio}
+              onChange={(e) => setPrecio(e.target.value)}
+              required
+              min="0"
+              addon="$"
+            />
+          </div>
+
+          <div className="mb-4">
+            <Label htmlFor="costo">Precio de costo:</Label>
+            <TextInput
+              id="costo"
+              type="number"
+              value={costo}
+              onChange={(e) => setCosto(e.target.value)}
+              required
+              min="0"
+              addon="$"
+            />
+          </div>
+
+          <div className="mb-4">
+            <Label htmlFor="categoria">Categoría:</Label>
+            <Select
+              id="categoria"
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value)}
+              required
+            >
+              <option value="">Selecciona una categoría</option>
+              {categorias.map((cat, idx) => (
+                <option key={idx} value={cat}>
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {/* Tipo de producto */}
+          <div className="mb-4">
+            <Label className="mb-2 block">Tipo de producto:</Label>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Radio
+                  id="codigo"
+                  name="tipoProducto"
+                  value="codigo"
+                  checked={tipoProducto === "codigo"}
+                  onChange={() => setTipoProducto("codigo")}
+                />
+                <Label htmlFor="codigo">Con código de barras</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <Radio
+                  id="atajo"
+                  name="tipoProducto"
+                  value="atajo"
+                  checked={tipoProducto === "atajo"}
+                  onChange={() => setTipoProducto("atajo")}
+                />
+                <Label htmlFor="atajo">Con atajo</Label>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <Label htmlFor="codigoBarra">Código de barras:</Label>
+            <TextInput
+              id="codigoBarra"
+              value={codigoBarra}
+              onChange={(e) => setCodigoBarra(e.target.value)}
+              disabled={tipoProducto !== "codigo"}
+              required={tipoProducto === "codigo"}
+            />
+          </div>
+
+          <div className="mb-4">
+            <Label htmlFor="atajo">Atajo:</Label>
+            <TextInput
+              id="atajo"
+              value={atajo}
+              onChange={(e) => setAtajo(e.target.value)}
+              disabled={tipoProducto !== "atajo"}
+              required={tipoProducto === "atajo"}
+            />
+          </div>
+
+          <div className="mb-4">
+            <Label htmlFor="unidadVenta">Unidad de venta:</Label>
+            <Select
+              id="unidadVenta"
+              value={unidadVenta}
+              onChange={(e) => setUnidadVenta(e.target.value)}
+              disabled={tipoProducto !== "atajo"}
+              required={tipoProducto === "atajo"}
+            >
+              <option value="">Selecciona una unidad</option>
+              <option value="unidad">Unidad</option>
+              <option value="kg">Kg</option>
+              <option value="docena">Docena</option>
+            </Select>
+          </div>
+
+          <div className="text-center">
+            <Button type="submit" color="blue">
+              Guardar
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      <Button
+        color="gray"
+        pill
+        className="fixed bottom-6 left-6 z-50 shadow-lg cursor-pointer"
+        onClick={() => navigate("/productos")}
+      >
+        <svg
+          className="w-5 h-5 inline-block mr-1"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15 19l-7-7 7-7"
+          />
+        </svg>
+        Volver
+      </Button>
+    </div>
+  );
+};
+
+export default Edit;
