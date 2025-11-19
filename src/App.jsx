@@ -21,6 +21,10 @@ import Estadisticas from "./components/Estadisticas";
 import UnidadVenta from "./components/UnidadVenta";
 import GestionUsuarios from "./components/GestionUsuarios";
 
+//routes
+import PrivateRoute from "./routes/PrivateRoute";
+import AdminRoute from "./routes/AdminRoutes";
+
 function App() {
   const [user, loading] = useAuthState(auth);
 
@@ -55,28 +59,103 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
 
-          {user ? (
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Home />} />
-              <Route path="productos" element={<Show />} />
-              <Route path="productos/create" element={<Create />} />
-              <Route path="productos/edit/:id" element={<Edit />} />
-              <Route
-                path="productos/unidades-de-venta"
-                element={<UnidadVenta />}
-              />
-              <Route path="ventas/create" element={<CreateVenta />} />
-              <Route path="ventas" element={<VentasMensuales />} />
-              <Route path="rubros" element={<Rubros />} />
-              <Route path="medios-de-pago" element={<MediosPago />} />
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <Layout />
+              </PrivateRoute>
+            }
+          >
+            <Route index element={<Home />} />
 
-              <Route path="categorias" element={<Categorias />} />
-              <Route path="ventas/estadisticas" element={<Estadisticas />} />
-              <Route path="gestion-usuarios" element={<GestionUsuarios />} />
-            </Route>
-          ) : (
-            <Route path="*" element={<Navigate to="/login" />} />
-          )}
+            {/* VISTAS DISPONIBLES PARA TODOS */}
+            <Route path="ventas/create" element={<CreateVenta />} />
+
+            {/* SOLO ADMIN */}
+            <Route
+              path="productos"
+              element={
+                <AdminRoute>
+                  <Show />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="productos/create"
+              element={
+                <AdminRoute>
+                  <Create />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="productos/edit/:id"
+              element={
+                <AdminRoute>
+                  <Edit />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="productos/unidades-de-venta"
+              element={
+                <AdminRoute>
+                  <UnidadVenta />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="ventas"
+              element={
+                <AdminRoute>
+                  <VentasMensuales />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="rubros"
+              element={
+                <AdminRoute>
+                  <Rubros />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="medios-de-pago"
+              element={
+                <AdminRoute>
+                  <MediosPago />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="categorias"
+              element={
+                <AdminRoute>
+                  <Categorias />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="ventas/estadisticas"
+              element={
+                <AdminRoute>
+                  <Estadisticas />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="gestion-usuarios"
+              element={
+                <AdminRoute>
+                  <GestionUsuarios />
+                </AdminRoute>
+              }
+            />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
     </>

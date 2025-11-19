@@ -84,6 +84,8 @@ const formatearVentas = (docs) => {
       totalConRecargo: data.totalConRecargo ?? data.total ?? 0,
       recargoTotal: data.recargoTotal ?? 0,
       vuelto: data.vuelto ?? 0,
+      cajeroId: data.cajeroId ?? null,
+      cajeroNombre: data.cajeroNombre ?? "Sin asignar",
       productos: [
         ...(data.products ?? data.productos ?? []),
         ...(data.rubros?.map((rubro) => ({
@@ -504,7 +506,7 @@ const VentasMensuales = () => {
               <TableHeadCell>Recargo</TableHeadCell>
               <TableHeadCell>Total Final</TableHeadCell>
               <TableHeadCell>Vuelto</TableHeadCell>
-              <TableHeadCell>Medio de pago</TableHeadCell>
+              <TableHeadCell>Empleado</TableHeadCell>
               <TableHeadCell>Acciones</TableHeadCell>
             </TableRow>
           </TableHead>
@@ -532,24 +534,7 @@ const VentasMensuales = () => {
                   >
                     ${parseFloat(venta.vuelto)}
                   </TableCell>
-                  <TableCell>
-                    {Array.isArray(venta.medioPago) &&
-                    venta.medioPago.length > 0 ? (
-                      <div className="flex flex-col items-center">
-                        {venta.medioPago.map((mp, idx) => (
-                          <span key={idx}>
-                            {obtenerNombreMedioPago(mp.nombre)}
-
-                            {mp.monto !== null && mp.monto !== undefined
-                              ? ` - $${mp.monto.toLocaleString()}`
-                              : ""}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      "N/A"
-                    )}
-                  </TableCell>
+                  <TableCell>{venta.cajeroNombre || "Sin asignar"}</TableCell>
 
                   <TableCell>
                     <div className="flex gap-2 items-center justify-center lowercase">
@@ -635,7 +620,9 @@ const VentasMensuales = () => {
                       key={idx}
                       className="flex justify-between border-b border-dotted border-gray-300 py-1"
                     >
-                      <span className="w-1/2">{p.descripcion}</span>
+                      <span className="w-1/2">
+                        {p.descripcion.toLowerCase()}
+                      </span>
                       <span>x{p.cantidad}</span>
                       <span>${(p.precio * p.cantidad).toLocaleString()}</span>
                     </div>

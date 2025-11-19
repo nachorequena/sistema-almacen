@@ -66,7 +66,7 @@ const Create = () => {
     }
 
     await addDoc(productsCollection, {
-      description,
+      description: description.trim(),
       costo: Number(costo),
       precio: Number(precio),
       ganancia: Number(precio) - Number(costo),

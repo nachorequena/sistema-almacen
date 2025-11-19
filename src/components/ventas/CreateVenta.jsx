@@ -27,9 +27,12 @@ import {
 } from "flowbite-react";
 import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { ca } from "date-fns/locale";
 const MySwal = withReactContent(Swal);
 
 const CreateVenta = () => {
+  const { cerrarSesion } = useAuth();
   const [productos, setProductos] = useState([]);
   const [rubros, setRubros] = useState([]);
   const [mediosPago, setMediosPago] = useState([]);
@@ -42,6 +45,9 @@ const CreateVenta = () => {
   const inputRef = useRef(null);
   const navigate = useNavigate();
   const montoClienteInputRef = useRef(null);
+
+  const usuario = JSON.parse(localStorage.getItem("usuario"));
+
   useEffect(() => {
     // Solo enfocamos el input si no hay un modal abierto
     if (!mostrarModalCobro) {
@@ -585,6 +591,8 @@ const CreateVenta = () => {
         pagos: result?.pagos || [],
         vuelto: parseFloat(result?.vuelto) || 0,
         fecha: new Date(),
+        cajeroId: usuario.id,
+        cajeroNombre: usuario.usuario,
       });
 
       setItemsVendidos([]);
@@ -596,19 +604,33 @@ const CreateVenta = () => {
     }
   };
 
+  const handleLogout = async () => {
+    await cerrarSesion();
+    navigate("/login");
+  };
+
   return (
     <div className="flex min-h-screen">
       <div className="flex-1 p-6 rounded-xl space-y-4 pr-72" tabIndex={0}>
         <Card>
           <div className="flex justify-start">
-            <Button
-              pill
-              size="s"
-              className="z-50 text-blue-500 bg-transparent hover:bg-transparent hover:text-blue-600 transition transform hover:scale-105 hover:cursor-pointer"
-              onClick={() => navigate("/ventas")}
-            >
-              Volver
-            </Button>
+            {usuario?.rol === "empleado" ? (
+              <Button
+                size="s"
+                className="z-50 text-red-600 bg-transparent hover:bg-transparent hover:text-red-500 transition transform hover:scale-105 hover:cursor-pointer"
+                onClick={handleLogout}
+              >
+                Cerrar sesión
+              </Button>
+            ) : (
+              <Button
+                size="s"
+                className="z-50 text-blue-500 bg-transparent hover:bg-transparent hover:text-blue-600 transition transform hover:scale-105 hover:cursor-pointer"
+                onClick={() => navigate(-1)}
+              >
+                Volver
+              </Button>
+            )}
           </div>
           <div className="overflow-x-auto">
             <Table>

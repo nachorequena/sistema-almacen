@@ -23,7 +23,7 @@ import Swal from "sweetalert2";
 
 export default function Layout() {
   const { pathname } = useLocation();
-  const { logout } = useAuth();
+  const { cerrarSesion } = useAuth();
 
   // 🚀 Lógica clave: Determina si estamos en la vista de venta.
   // Usamos endsWith para que funcione incluso si hay subrutas (aunque no aplica aquí).
@@ -45,7 +45,7 @@ export default function Layout() {
       cancelButtonText: "Cancelar",
     }).then((result) => {
       if (result.isConfirmed) {
-        logout();
+        cerrarSesion();
       }
     });
   };

@@ -1,14 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import bcrypt from "bcryptjs";
 import { db } from "../firebaseConfig";
 import { collection, query, where, getDocs } from "firebase/firestore";
+import { useAuth } from "../context/AuthContext"; // ← IMPORTANTE
 
 export default function Login() {
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const { usuario: usuarioLogueado, login } = useAuth(); // ← usamos el contexto
+
+  // 🚀 Si ya hay usuario logueado, redirigir automáticamente
+  useEffect(() => {
+    if (usuarioLogueado) {
+      if (usuarioLogueado.rol === "empleado") {
+        navigate("/ventas/create");
+      } else {
+        navigate("/");
+      }
+    }
+  }, [usuarioLogueado, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -18,6 +31,7 @@ export default function Login() {
         collection(db, "usuarios"),
         where("usuario", "==", usuario.toLowerCase())
       );
+
       const resultado = await getDocs(q);
 
       if (resultado.empty) {
@@ -42,18 +56,24 @@ export default function Login() {
         );
       }
 
-      // Guardar sesión local y continuar
-      localStorage.setItem(
-        "usuario",
-        JSON.stringify({
-          usuario: userData.usuario,
-          rol: userData.rol,
-          id: resultado.docs[0].id,
-        })
-      );
+      // 🚀 Guardar sesión con el CONTEXTO, no solo localStorage
+      login({
+        usuario: userData.usuario,
+        rol: userData.rol,
+        id: resultado.docs[0].id,
+        loginTime: Date.now(),
+      });
 
-      Swal.fire("Bienvenido!", "Inicio de sesión correcto", "success");
-      navigate("/");
+      Swal.fire({
+        title: `Hola ${userData.usuario.toUpperCase()}`,
+        text: "Inicio de sesión correcto",
+        icon: "success",
+        timer: 1400,
+        showConfirmButton: false,
+      });
+
+      // YA NO HACE navigate() ACÁ
+      // La redirección la hace el useEffect cuando login() actualice el contexto
     } catch (error) {
       console.error(error);
       Swal.fire("Error", "Hubo un problema al iniciar sesión", "error");

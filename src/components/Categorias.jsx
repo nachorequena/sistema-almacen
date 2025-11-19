@@ -47,7 +47,7 @@ const Categorias = () => {
       title: "Nueva Categoría",
       input: "text",
       inputLabel: "Nombre de la categoría",
-      inputPlaceholder: "Ej: Mates, Termos, Bombillas...",
+      inputPlaceholder: "Ej: Galletitas, bebidas, cigarrillos,etc...",
       showCancelButton: true,
       confirmButtonText: "Agregar",
       cancelButtonText: "Cancelar",
