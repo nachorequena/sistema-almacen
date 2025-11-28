@@ -13,6 +13,10 @@ const Create = () => {
   const [categorias, setCategorias] = useState([]);
   const [codigoBarra, setCodigoBarra] = useState("");
   const [atajo, setAtajo] = useState("");
+  const [hasVariants, setHasVariants] = useState(false);
+  const [variants, setVariants] = useState([]); // { name, codigoBarra }
+  const [variantName, setVariantName] = useState("");
+  const [variantCodigo, setVariantCodigo] = useState("");
   const [unidadVenta, setUnidadVenta] = useState([]);
   const [unidadVentaSeleccionada, setUnidadVentaSeleccionada] = useState("");
   const [tipoProducto, setTipoProducto] = useState("codigo"); // "codigo" o "atajo"
@@ -65,16 +69,62 @@ const Create = () => {
       }
     }
 
-    await addDoc(productsCollection, {
-      description: description.trim(),
-      costo: Number(costo),
-      precio: Number(precio),
-      ganancia: Number(precio) - Number(costo),
-      categoria: categoria.toLowerCase(),
-      codigoBarra: tipoProducto === "codigo" ? codigoBarra : null,
-      atajo: tipoProducto === "atajo" ? atajo.toLowerCase() : null,
-      unidadVenta: tipoProducto === "atajo" ? unidadVentaSeleccionada : null,
-    });
+    if (tipoProducto === "codigo") {
+      if (hasVariants) {
+        if (variants.length === 0) {
+          Swal.fire("Error", "Agrega al menos una variante", "error");
+          return;
+        }
+
+        // Verificar duplicados para cada variante
+        for (const v of variants) {
+          const existe = await verificarCodigoBarraDuplicado(v.codigoBarra);
+          if (existe) {
+            Swal.fire(
+              "Error",
+              `El código de barras ${v.codigoBarra} ya está en uso`,
+              "error"
+            );
+            return;
+          }
+        }
+      } else if (codigoBarra) {
+        const codigoBarraDuplicado = await verificarCodigoBarraDuplicado(
+          codigoBarra
+        );
+        if (codigoBarraDuplicado) {
+          Swal.fire("Error", "El código de barras ya está en uso", "error");
+          return;
+        }
+      }
+    }
+
+    if (hasVariants && tipoProducto === "codigo") {
+      // Crear un producto por cada variante
+      for (const v of variants) {
+        await addDoc(productsCollection, {
+          description: `${description.trim()} ${v.name}`,
+          costo: Number(costo),
+          precio: Number(precio),
+          ganancia: Number(precio) - Number(costo),
+          categoria: categoria.toLowerCase(),
+          codigoBarra: v.codigoBarra,
+          atajo: null,
+          unidadVenta: null,
+        });
+      }
+    } else {
+      await addDoc(productsCollection, {
+        description: description.trim(),
+        costo: Number(costo),
+        precio: Number(precio),
+        ganancia: Number(precio) - Number(costo),
+        categoria: categoria.toLowerCase(),
+        codigoBarra: tipoProducto === "codigo" ? codigoBarra : null,
+        atajo: tipoProducto === "atajo" ? atajo.toLowerCase() : null,
+        unidadVenta: tipoProducto === "atajo" ? unidadVentaSeleccionada : null,
+      });
+    }
 
     const Toast = Swal.mixin({
       toast: true,
@@ -109,6 +159,41 @@ const Create = () => {
     );
 
     return [...productosAtajos, ...rubrosAtajos].includes(atajoLower);
+  };
+
+  const verificarCodigoBarraDuplicado = async (nuevoCodigoBarras) => {
+    const codigoBarrasLower = nuevoCodigoBarras.toLowerCase().trim();
+
+    const productosSnap = await getDocs(collection(db, "products"));
+
+    const codigosBarrasExistentes = productosSnap.docs.map((doc) =>
+      doc.data().codigoBarra?.toLowerCase().trim()
+    );
+
+    return codigosBarrasExistentes.includes(codigoBarrasLower);
+  };
+
+  const addVariant = () => {
+    const name = variantName.trim();
+    const code = variantCodigo.trim();
+    if (!name || !code) {
+      Swal.fire("Error", "La variante necesita nombre y código", "error");
+      return;
+    }
+
+    // evitar duplicados locales
+    if (variants.some((v) => v.codigoBarra === code)) {
+      Swal.fire("Error", "El código ya se agregó en las variantes", "error");
+      return;
+    }
+
+    setVariants((prev) => [...prev, { name, codigoBarra: code }]);
+    setVariantName("");
+    setVariantCodigo("");
+  };
+
+  const removeVariant = (idx) => {
+    setVariants((prev) => prev.filter((_, i) => i !== idx));
   };
 
   return (
@@ -211,15 +296,94 @@ const Create = () => {
           {/* Código de barras */}
           <div className="mb-4">
             <Label htmlFor="codigoBarra">Código de barras:</Label>
-            <TextInput
-              id="codigoBarra"
-              placeholder="Ej: 1234567890123"
-              value={codigoBarra}
-              onChange={(e) => setCodigoBarra(e.target.value)}
-              disabled={tipoProducto !== "codigo"}
-              required={tipoProducto === "codigo"}
-            />
+            {tipoProducto === "codigo" && (
+              <>
+                {!hasVariants ? (
+                  <TextInput
+                    id="codigoBarra"
+                    placeholder="Ej: 1234567890123"
+                    value={codigoBarra}
+                    onChange={(e) => setCodigoBarra(e.target.value)}
+                    disabled={tipoProducto !== "codigo"}
+                    required={tipoProducto === "codigo" && !hasVariants}
+                  />
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    Usando variantes: el código se agrega por variante
+                  </p>
+                )}
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    id="hasVariants"
+                    type="checkbox"
+                    checked={hasVariants}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setHasVariants(checked);
+                      if (checked) setTipoProducto("codigo");
+                    }}
+                  />
+                  <Label htmlFor="hasVariants" className="mb-0">
+                    Producto con variantes (ej: sabores)
+                  </Label>
+                </div>
+              </>
+            )}
           </div>
+
+          {/* Variantes */}
+          {hasVariants && tipoProducto === "codigo" && (
+            <div className="mb-4 border p-3 rounded">
+              <Label className="mb-2">Agregar variantes</Label>
+              <div className="flex gap-2 mb-2">
+                <TextInput
+                  placeholder="Nombre variante (ej: Cola, Naranja)"
+                  value={variantName}
+                  onChange={(e) => setVariantName(e.target.value)}
+                />
+                <TextInput
+                  placeholder="Código de barras"
+                  value={variantCodigo}
+                  onChange={(e) => setVariantCodigo(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addVariant();
+                    }
+                  }}
+                />
+                <Button onClick={addVariant}>Agregar</Button>
+              </div>
+
+              <div>
+                {variants.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    No hay variantes agregadas
+                  </p>
+                ) : (
+                  <ul className="space-y-1">
+                    {variants.map((v, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-center justify-between"
+                      >
+                        <span>
+                          <strong>{v.name}</strong> — {v.codigoBarra}
+                        </span>
+                        <Button
+                          color="gray"
+                          size="xs"
+                          onClick={() => removeVariant(idx)}
+                        >
+                          Eliminar
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Atajo */}
           <div className="mb-4">

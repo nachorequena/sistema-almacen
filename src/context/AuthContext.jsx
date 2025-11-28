@@ -14,8 +14,8 @@ export const AuthProvider = ({ children }) => {
     if (data) {
       const parsed = JSON.parse(data);
 
-      // Duración de la sesión: 8 horas (en milisegundos)
-      const EXPIRACION = 8 * 60 * 60 * 1000;
+      // Duración de la sesión: 5 horas (en milisegundos)
+      const EXPIRACION = 5 * 60 * 60 * 1000;
 
       if (Date.now() - parsed.loginTime > EXPIRACION) {
         // Expiró la sesión

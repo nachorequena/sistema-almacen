@@ -139,17 +139,53 @@ const Show = () => {
     getCategorias();
   }, []);
 
-  const productosFiltrados = products.filter((p) => {
-    const coincideCategoria =
-      categoriaSeleccionada === "Todas" ||
-      p.categoria.toLowerCase() === categoriaSeleccionada.toLowerCase();
+  const normalize = (s) =>
+    (s || "")
+      .toString()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // quita acentos
+      .toLowerCase()
+      .trim();
 
-    const descripcion = p.description.toLowerCase();
+  const productosFiltrados = products.filter((p) => {
+    // Normalizar categoría seleccionada
+    const catSel = normalize(categoriaSeleccionada);
+
+    // Obtener la(s) categoría(s) del producto en varios formatos posibles
+    let prodCats = [];
+    if (!p.categoria && p.categoria !== "") {
+      // si viene como objeto con nombre
+      if (
+        p.categoria &&
+        typeof p.categoria === "object" &&
+        p.categoria.nombre
+      ) {
+        prodCats = [normalize(p.categoria.nombre)];
+      } else {
+        prodCats = [];
+      }
+    } else if (Array.isArray(p.categoria)) {
+      prodCats = p.categoria.map((c) => normalize(c));
+    } else {
+      prodCats = [normalize(p.categoria)];
+    }
+
+    const coincideCategoria = catSel === "todas" || prodCats.includes(catSel);
+
+    const descripcion = normalize(p.description);
+    const codigo = normalize(p.codigoBarra);
+    const atajo = normalize(p.atajo);
+
     const palabrasBusqueda = busqueda.toLowerCase().split(" ").filter(Boolean);
 
-    const coincideBusqueda = palabrasBusqueda.every((palabra) =>
-      descripcion.includes(palabra)
-    );
+    const coincideBusqueda =
+      palabrasBusqueda.length === 0 ||
+      palabrasBusqueda.every((palabra) => {
+        const np = normalize(palabra);
+        return (
+          descripcion.includes(np) || codigo.includes(np) || atajo.includes(np)
+        );
+      });
 
     return coincideCategoria && coincideBusqueda;
   });
@@ -176,7 +212,8 @@ const Show = () => {
       <Card className=" border border-gray-300">
         <div className="flex justify-between">
           <div className="flex items-center gap-4 mb-6">
-            <div className="flex items-center gap-2">
+            {/* Radio estilizado: ocultamos el input nativo y estilizamos la label */}{" "}
+            <div className="flex items-center gap-3">
               <input
                 type="radio"
                 id="codigoBarra"
@@ -184,10 +221,24 @@ const Show = () => {
                 value="codigoBarra"
                 checked={tipoProducto === "codigoBarra"}
                 onChange={(e) => setTipoProducto(e.target.value)}
+                className="hidden"
               />
-              <label htmlFor="codigoBarra">Con código de barras</label>
-            </div>
-            <div className="flex items-center gap-2">
+              <label
+                htmlFor="codigoBarra"
+                role="radio"
+                aria-checked={tipoProducto === "codigoBarra"}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full transition-transform transform origin-center cursor-pointer select-none border
+                ${
+                  tipoProducto === "codigoBarra"
+                    ? "bg-blue-600 text-white border-blue-700 shadow-md"
+                    : "bg-white text-gray-800 border-gray-200 hover:scale-105"
+                }
+                focus:outline-none focus:ring-2 focus:ring-blue-300`}
+              >
+                <span className="text-sm font-medium">
+                  Con código de barras
+                </span>
+              </label>
               <input
                 type="radio"
                 id="atajo"
@@ -195,10 +246,24 @@ const Show = () => {
                 value="atajo"
                 checked={tipoProducto === "atajo"}
                 onChange={(e) => setTipoProducto(e.target.value)}
+                className="hidden"
               />
-              <label htmlFor="atajo">Con atajo</label>
+              <label
+                htmlFor="atajo"
+                role="radio"
+                aria-checked={tipoProducto === "atajo"}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full transition-transform transform origin-center cursor-pointer select-none border
+                ${
+                  tipoProducto === "atajo"
+                    ? "bg-blue-600 text-white border-blue-700 shadow-md"
+                    : "bg-white text-gray-800 border-gray-200 hover:scale-105"
+                }                focus:outline-none focus:ring-2 focus:ring-blue-300`}
+              >
+                <span className="text-sm font-medium">Con atajo</span>
+              </label>
             </div>
           </div>
+
           <div>
             <h2 className="text-xl font-bold">Lista de Productos</h2>
           </div>
@@ -242,39 +307,47 @@ const Show = () => {
         </div>
 
         <TextInput
-          placeholder="Buscar producto..."
+          placeholder="Buscar producto por nombre o código de barras..."
           value={busqueda}
           onChange={(e) => {
             setBusqueda(e.target.value);
             setPaginaActual(1);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              // Evita que el formulario se envíe
+              e.preventDefault();
+            }
           }}
           className="mb-4 mx-10"
         />
 
         <Table striped={false} className="text-center">
           <TableHead>
-            {tipoProducto === "codigoBarra" ? (
-              <>
-                <TableHeadCell>Nombre</TableHeadCell>
-                <TableHeadCell>Precio</TableHeadCell>
-                <TableHeadCell>Precio costo</TableHeadCell>
-                <TableHeadCell>Ganancia</TableHeadCell>
-                <TableHeadCell>Categoría</TableHeadCell>
-                <TableHeadCell>Codigo de barras</TableHeadCell>
-                <TableHeadCell>Acciones</TableHeadCell>
-              </>
-            ) : (
-              <>
-                <TableHeadCell>Nombre</TableHeadCell>
-                <TableHeadCell>Unidad de venta</TableHeadCell>
-                <TableHeadCell>Precio</TableHeadCell>
-                <TableHeadCell>Precio costo</TableHeadCell>
-                <TableHeadCell>Ganancia</TableHeadCell>
-                <TableHeadCell>Categoría</TableHeadCell>
-                <TableHeadCell>Atajo</TableHeadCell>
-                <TableHeadCell>Acciones</TableHeadCell>
-              </>
-            )}
+            <TableRow>
+              {tipoProducto === "codigoBarra" ? (
+                <>
+                  <TableHeadCell>Nombre</TableHeadCell>
+                  <TableHeadCell>Precio</TableHeadCell>
+                  <TableHeadCell>Precio costo</TableHeadCell>
+                  <TableHeadCell>Ganancia</TableHeadCell>
+                  <TableHeadCell>Categoría</TableHeadCell>
+                  <TableHeadCell>Codigo de barras</TableHeadCell>
+                  <TableHeadCell>Acciones</TableHeadCell>
+                </>
+              ) : (
+                <>
+                  <TableHeadCell>Nombre</TableHeadCell>
+                  <TableHeadCell>Unidad de venta</TableHeadCell>
+                  <TableHeadCell>Precio</TableHeadCell>
+                  <TableHeadCell>Precio costo</TableHeadCell>
+                  <TableHeadCell>Ganancia</TableHeadCell>
+                  <TableHeadCell>Categoría</TableHeadCell>
+                  <TableHeadCell>Atajo</TableHeadCell>
+                  <TableHeadCell>Acciones</TableHeadCell>
+                </>
+              )}
+            </TableRow>
           </TableHead>
 
           <TableBody className="divide-y divide-gray-500 text-gray-900">
@@ -310,7 +383,7 @@ const Show = () => {
                       size="xs"
                       color="gray"
                       onClick={() => navigate(`/productos/edit/${producto.id}`)}
-                      className="text-cyan-400 hover:text-cyan-200 bg-transparent hover:cursor-pointer"
+                      className="text-blue-500 hover:text-blue-400 bg-transparent hover:cursor-pointer"
                     >
                       <HiPencil className="w-5 h-5" />
                     </Button>

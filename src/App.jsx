@@ -24,6 +24,9 @@ import GestionUsuarios from "./components/GestionUsuarios";
 //routes
 import PrivateRoute from "./routes/PrivateRoute";
 import AdminRoute from "./routes/AdminRoutes";
+import CreateCliente from "./components/clientes/CreateCliente";
+import ListaClientes from "./components/clientes/ListaClientes";
+import EditCliente from "./components/clientes/EditCliente";
 
 function App() {
   const [user, loading] = useAuthState(auth);
@@ -150,6 +153,32 @@ function App() {
               element={
                 <AdminRoute>
                   <GestionUsuarios />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="clientes"
+              element={
+                <AdminRoute>
+                  <ListaClientes />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="clientes/edit/:id"
+              element={
+                <AdminRoute>
+                  <EditCliente />
+                </AdminRoute>
+              }
+            />
+
+            <Route
+              path="clientes/create"
+              element={
+                <AdminRoute>
+                  <CreateCliente />
                 </AdminRoute>
               }
             />

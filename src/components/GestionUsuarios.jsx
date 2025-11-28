@@ -193,7 +193,10 @@ const GestionUsuarios = () => {
 
           <TableBody>
             {usuariosActuales.map((u) => (
-              <TableRow key={u.id} className="hover:bg-gray-100 uppercase">
+              <TableRow
+                key={u.id}
+                className="hover:bg-gray-100 uppercase text-gray-900"
+              >
                 <TableCell>
                   {editandoId === u.id ? (
                     <TextInput

@@ -178,9 +178,11 @@ const MediosPago = () => {
 
         <Table striped={false} className="text-center">
           <TableHead>
-            <TableHeadCell>Nombre</TableHeadCell>
-            <TableHeadCell>Recargo (%)</TableHeadCell> {/* 🆕 */}
-            <TableHeadCell>Acciones</TableHeadCell>
+            <TableRow>
+              <TableHeadCell>Nombre</TableHeadCell>
+              <TableHeadCell>Recargo (%)</TableHeadCell>
+              <TableHeadCell>Acciones</TableHeadCell>
+            </TableRow>
           </TableHead>
           <TableBody className="divide-y divide-gray-500 text-gray-900">
             {mediosDePagoActuales.map((medio) => (

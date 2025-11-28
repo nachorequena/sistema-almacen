@@ -182,7 +182,7 @@ const VentasMensuales = () => {
       let fechaInicio, fechaFin;
       const hoy = new Date();
 
-      // 1. LÓGICA DE FILTRADO POR TIEMPO (CORRECTA)
+      // 1. LÓGICA DE FILTRADO POR TIEMPO
       if (tipoVista === "mensual") {
         fechaInicio = startOfMonth(new Date(anioSeleccionado, mesSeleccionado));
         fechaFin = endOfMonth(fechaInicio);
@@ -199,10 +199,9 @@ const VentasMensuales = () => {
         (v) => v.fecha >= fechaInicio && v.fecha <= fechaFin
       );
 
-      // 🚀 2. FILTRO POR MEDIO DE PAGO (CORREGIDO: Aplicado a las VENTAS)
+      // 2. FILTRO POR MEDIO DE PAGO (AHORA COMPARA POR NOMBRE)
       if (medioPagoFiltro) {
         ventasFiltradas = ventasFiltradas.filter((v) => {
-          // v.medioPago es un array de objetos { nombre: '...', monto: ... }
           return v.medioPago.some(
             (mp) =>
               normalizarTexto(mp.nombre) === normalizarTexto(medioPagoFiltro)
@@ -210,30 +209,22 @@ const VentasMensuales = () => {
         });
       }
 
-      // Extraer todos los productos de las ventas filtradas (por fecha y medio de pago)
+      // Extraer productos de ventas filtradas
       let productos = ventasFiltradas.flatMap((venta) =>
         venta.productos.map((p) => ({
           ...p,
           ventaId: venta.id,
           fecha: venta.fecha,
-          // Añadir los medios de pago de la venta al producto, para propósitos de la vista
           medioPago: venta.medioPago,
         }))
       );
 
-      productos.forEach((p) => {
-        if (!p.categoria) {
-          console.warn("⚠️ Producto sin categoría:", p);
-        }
-      });
-
       let productosFinales = [];
 
       const esCategoriaRubros = normalizarTexto(categoriaFiltro) === "rubros";
-
       const esCategoriaTodas = categoriaFiltro === "";
 
-      // 3. LÓGICA DE FILTRADO POR CATEGORÍA
+      // 3. FILTRADO POR CATEGORÍA
       if (esCategoriaRubros || esCategoriaTodas) {
         const agrupado = {};
 
@@ -242,7 +233,7 @@ const VentasMensuales = () => {
             return;
 
           if (normalizarTexto(p.categoria) === "rubros") {
-            const key = `${p.descripcion}_${p.ventaId}`; // clave única por rubro + venta
+            const key = `${p.descripcion}_${p.ventaId}`;
 
             if (!agrupado[key]) {
               agrupado[key] = {
@@ -275,14 +266,13 @@ const VentasMensuales = () => {
           productosFinales = rubros;
         }
       } else {
-        // Categoría específica (no "Rubros" ni "Todas")
         productosFinales = productos.filter(
           (p) =>
             normalizarTexto(p.categoria) === normalizarTexto(categoriaFiltro)
         );
       }
 
-      // 🚀 4. FILTRO POR PRODUCTO (CORREGIDO: Aplicado después de la categoría)
+      // 4. FILTRO POR PRODUCTO
       if (productoFiltro && !esCategoriaRubros) {
         productosFinales = productosFinales.filter(
           (p) =>
@@ -290,12 +280,12 @@ const VentasMensuales = () => {
         );
       }
 
-      // 5. Ordenar por fecha (CORRECTO)
+      // 5. Ordenar por fecha
       productosFinales.sort((a, b) => {
         return ordenFecha === "asc" ? a.fecha - b.fecha : b.fecha - a.fecha;
       });
 
-      // 6. CÁLCULO DE RESUMEN (CORREGIDO: Usa ventasFiltradas)
+      // 6. CÁLCULO DE RESUMEN
       const total = ventasFiltradas.reduce(
         (acc, v) => acc + (v.totalConRecargo ?? v.total ?? 0),
         0
@@ -310,8 +300,8 @@ const VentasMensuales = () => {
       );
 
       // 7. ACTUALIZAR ESTADOS
-      setVentas(ventasFiltradas); // Lista de ventas que pasará a la tabla
-      setProductosMes(productosFinales); // Lista de productos/rubros que se usa para el filtro de Producto y el resumen
+      setVentas(ventasFiltradas);
+      setProductosMes(productosFinales);
       setResumen({ total, ganancia, productosVendidos });
       setPaginaActual(1);
     } catch (error) {
@@ -389,25 +379,35 @@ const VentasMensuales = () => {
           </Button>
         </div>
 
-        <div className="flex flex-wrap gap-4 mb-4">
-          <div>
-            <Label>Tipo de vista</Label>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+          <div className="flex flex-col">
+            <Label
+              htmlFor="tipoVista"
+              className="mb-2 font-semibold text-gray-700"
+            >
+              Tipo de vista
+            </Label>
             <Select
+              id="tipoVista"
               value={tipoVista}
               onChange={(e) => setTipoVista(e.target.value)}
-              className="  border-gray-600"
+              className="border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
             >
               <option value="diaria">Diaria</option>
               <option value="semanal">Semanal</option>
               <option value="mensual">Mensual</option>
             </Select>
           </div>
-          <div>
-            <Label>Mes</Label>
+
+          <div className="flex flex-col">
+            <Label htmlFor="mes" className="mb-2 font-semibold text-gray-700">
+              Mes
+            </Label>
             <Select
+              id="mes"
               value={mesSeleccionado}
-              onChange={(e) => setMesSeleccionado(e.target.value)}
-              className="  border-gray-600"
+              onChange={(e) => setMesSeleccionado(parseInt(e.target.value))}
+              className="border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
             >
               {meses.map((mes, idx) => (
                 <option key={idx} value={idx}>
@@ -416,12 +416,16 @@ const VentasMensuales = () => {
               ))}
             </Select>
           </div>
-          <div>
-            <Label>Año</Label>
+
+          <div className="flex flex-col">
+            <Label htmlFor="anio" className="mb-2 font-semibold text-gray-700">
+              Año
+            </Label>
             <Select
+              id="anio"
               value={anioSeleccionado}
-              onChange={(e) => setAnioSeleccionado(e.target.value)}
-              className="  border-gray-600"
+              onChange={(e) => setAnioSeleccionado(parseInt(e.target.value))}
+              className="border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
             >
               {Array.from(
                 { length: 5 },
@@ -434,12 +438,18 @@ const VentasMensuales = () => {
             </Select>
           </div>
 
-          <div>
-            <Label>Categoría</Label>
+          <div className="flex flex-col">
+            <Label
+              htmlFor="categoria"
+              className="mb-2 font-semibold text-gray-700"
+            >
+              Categoría
+            </Label>
             <Select
+              id="categoria"
               value={categoriaFiltro}
               onChange={(e) => setCategoriaFiltro(e.target.value)}
-              className="  border-gray-600"
+              className="border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
             >
               <option value="">Todas</option>
               {categorias.map((cat) => (
@@ -450,13 +460,19 @@ const VentasMensuales = () => {
             </Select>
           </div>
 
-          <div>
-            <Label>Producto</Label>
+          <div className="flex flex-col">
+            <Label
+              htmlFor="producto"
+              className="mb-2 font-semibold text-gray-700"
+            >
+              Producto
+            </Label>
             <Select
+              id="producto"
               value={productoFiltro}
               onChange={(e) => setProductoFiltro(e.target.value)}
               disabled={categoriaFiltro === "Rubros"}
-              className=" border-gray-600 disabled:opacity-50"
+              className="border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 disabled:opacity-50 disabled:bg-gray-100"
             >
               <option value="">Todos</option>
               {productosUnicos.map((prod, idx) => (
@@ -467,28 +483,37 @@ const VentasMensuales = () => {
             </Select>
           </div>
 
-          <div>
-            <Label>Medio de Pago</Label>
+          <div className="flex flex-col">
+            <Label
+              htmlFor="medioPago"
+              className="mb-2 font-semibold text-gray-700"
+            >
+              Medio de Pago
+            </Label>
             <Select
+              id="medioPago"
               value={medioPagoFiltro}
               onChange={(e) => setMedioPagoFiltro(e.target.value)}
-              className="uppercase border-gray-600"
+              className="border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
             >
               <option value="">Todos</option>
               {mediosPago.map((medio) => (
-                <option key={medio.id} value={medio.id}>
+                <option key={medio.id} value={medio.nombre}>
                   {medio.nombre}
                 </option>
               ))}
             </Select>
           </div>
 
-          <div>
-            <Label>Ordenar por fecha</Label>
+          <div className="flex flex-col">
+            <Label htmlFor="orden" className="mb-2 font-semibold text-gray-700">
+              Ordenar por fecha
+            </Label>
             <Select
+              id="orden"
               value={ordenFecha}
               onChange={(e) => setOrdenFecha(e.target.value)}
-              className=" border-gray-600"
+              className="border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
             >
               <option value="desc">Más reciente primero</option>
               <option value="asc">Más viejo primero</option>

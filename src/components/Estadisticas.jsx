@@ -294,39 +294,43 @@ const Estadisticas = () => {
         )})`;
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-6 space-y-8 bg-gray-50 rounded-lg shadow-md">
       <h1 className="text-3xl font-bold text-gray-900">
         Estadísticas de Ventas
       </h1>
 
       {/* --- Controles de Filtro --- */}
-      <Card className="flex justify-between items-center">
-        <div>
-          <Label htmlFor="periodo">Seleccionar Período</Label>
-          <Select
-            id="periodo"
-            value={periodo}
-            onChange={handlePeriodoChange}
-            required
-          >
-            <option value="diario">Diario</option>
-            <option value="mensual">Mensual</option>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="fecha">{periodo === "diario" ? "Día" : "Mes"}</Label>
-          <input
-            id="fecha"
-            type={periodo === "diario" ? "date" : "month"}
-            // CORRECCIÓN CLAVE 2: Usamos 'T12:00:00' para que el input muestre el mes correcto sin desfase.
-            value={
-              periodo === "diario"
-                ? fechaSeleccionada
-                : format(new Date(fechaSeleccionada + "T12:00:00"), "yyyy-MM")
-            }
-            onChange={handleFechaChange}
-            className="border border-gray-300 p-2 rounded-lg"
-          />
+      <Card className="flex justify-between items-center p-4 bg-white shadow-lg rounded-lg">
+        <div className="flex items-center space-x-4">
+          <div>
+            <Label htmlFor="periodo">Seleccionar Período</Label>
+            <Select
+              id="periodo"
+              value={periodo}
+              onChange={handlePeriodoChange}
+              required
+              className="border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="diario">Diario</option>
+              <option value="mensual">Mensual</option>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="fecha">
+              {periodo === "diario" ? "Día" : "Mes"}
+            </Label>
+            <input
+              id="fecha"
+              type={periodo === "diario" ? "date" : "month"}
+              value={
+                periodo === "diario"
+                  ? fechaSeleccionada
+                  : format(new Date(fechaSeleccionada + "T12:00:00"), "yyyy-MM")
+              }
+              onChange={handleFechaChange}
+              className="border border-gray-300 p-2 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
         </div>
       </Card>
 
@@ -381,6 +385,7 @@ const Estadisticas = () => {
           </Card>
         </div>
       </Card>
+
       {/* --- Medios de Pago y Top Ítems --- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Tabla de Medios de Pago */}

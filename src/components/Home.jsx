@@ -7,7 +7,10 @@ import { HiOutlineViewList, HiShoppingBag } from "react-icons/hi";
 
 import { BiCategoryAlt } from "react-icons/bi";
 import { MdOutlinePayment } from "react-icons/md";
-
+import { set } from "date-fns";
+import { FaUser } from "react-icons/fa";
+import { IoStatsChart } from "react-icons/io5";
+import { MdOutlineWorkspaces } from "react-icons/md";
 const CardLink = ({ to, icon: Icon, title, total, color }) => (
   <Link
     to={to}
@@ -16,100 +19,34 @@ const CardLink = ({ to, icon: Icon, title, total, color }) => (
     <Icon size={36} className={`${color}`} />
     <div>
       <h5 className="mb-1 text-xl font-bold tracking-tight">{title}</h5>
-      <p className="text-gray-400">Total: {total}</p>
+      {total && <p className="text-gray-400">Total: {total}</p>}
     </div>
   </Link>
 );
 
 export default function Home() {
   const [totalVentas, setTotalVentas] = useState(0);
-
+  const [totalRubros, setTotalRubros] = useState(0);
   const [totalProductos, setTotalProductos] = useState(0);
-
+  const [totalUsuarios, setTotalUsuarios] = useState(0);
   const [totalCategorias, setTotalCategorias] = useState(0);
   const [totalMediosPago, setTotalMediosPago] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
       const ventasSnapshot = await getDocs(collection(db, "ventas"));
-
+      const rubrosSnapshot = await getDocs(collection(db, "rubros"));
       const productosSnapshot = await getDocs(collection(db, "products"));
-
+      const usuariosSnapshot = await getDocs(collection(db, "usuarios"));
       const categoriasSnapshot = await getDocs(collection(db, "categorias"));
       const mediosPagoSnapshot = await getDocs(collection(db, "mediosDePago"));
 
       setTotalVentas(ventasSnapshot.size);
-
+      setTotalRubros(rubrosSnapshot.size);
       setTotalProductos(productosSnapshot.size);
-
+      setTotalUsuarios(usuariosSnapshot.size);
       setTotalCategorias(categoriasSnapshot.size);
       setTotalMediosPago(mediosPagoSnapshot.size);
-
-      const productosData = productosSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      const categoriaContador = {};
-      ventasSnapshot.forEach((venta) => {
-        venta.data().productos.forEach((p) => {
-          const producto = productosData.find(
-            (prod) => prod.id === p.productoId
-          );
-          const categoria = producto?.categoria || "sin categoría";
-          categoriaContador[categoria] =
-            (categoriaContador[categoria] || 0) + p.cantidad;
-        });
-      });
-
-      const ventasPorMesTemp = {};
-      ventasSnapshot.forEach((venta) => {
-        const fecha = venta.data().fecha.toDate();
-        const year = fecha.getFullYear();
-        const month = fecha.getMonth(); // numérico: 0-11
-        const key = `${year}-${month}`; // ejemplo: 2024-0, 2024-1
-
-        if (!ventasPorMesTemp[key]) {
-          ventasPorMesTemp[key] = { year, month, total: 0 };
-        }
-        ventasPorMesTemp[key].total += venta.data().total;
-      });
-
-      // Luego convertimos a array y ordenamos por year + month
-      const meses = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ];
-
-      const ventasPorMesOrdenadas = Object.values(ventasPorMesTemp)
-        .sort((a, b) => a.year - b.year || a.month - b.month)
-        .map((item) => ({
-          mes: `${meses[item.month]} ${item.year}`,
-          total: item.total,
-        }));
-
-      setVentasPorMes(ventasPorMesOrdenadas);
-
-      const tempData = {};
-      ventasSnapshot.forEach((venta) => {
-        const fecha = venta.data().fecha.toDate();
-        const mes = fecha.toLocaleString("default", {
-          month: "short",
-          year: "numeric",
-        });
-        tempData[mes] = tempData[mes] || { mes, ventas: 0, compras: 0 };
-        tempData[mes].ventas += venta.data().total;
-      });
     };
 
     fetchData();
@@ -147,6 +84,29 @@ export default function Home() {
           title="Medios de Pago"
           total={totalMediosPago}
           color="text-red-400"
+        />
+
+        <CardLink
+          to="/gestion-usuarios"
+          icon={FaUser}
+          title="Gestión de usuarios"
+          total={totalUsuarios}
+          color="text-blue-400"
+        />
+
+        <CardLink
+          to="/ventas/estadisticas"
+          icon={IoStatsChart}
+          title="Estadísticas"
+          color="text-purple-400"
+        />
+
+        <CardLink
+          to="/rubros"
+          icon={MdOutlineWorkspaces}
+          title="Rubros"
+          total={totalRubros}
+          color="text-cyan-400"
         />
       </div>
     </div>

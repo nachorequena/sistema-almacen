@@ -18,9 +18,9 @@ const Pagination = ({ totalPaginas, paginaActual, setPaginaActual }) => {
           <button
             disabled={paginaActual === 1}
             onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 1))}
-            className="px-3 py-2 bg-[#1f2937] text-white border border-gray-600 rounded-l-lg disabled:opacity-50 hover:bg-[#374151]"
+            className="px-3 py-2 bg-transparent text-blue-500 border border-blue-500 rounded-l-lg disabled:opacity-50 hover:bg-blue-600 hover:border-blue-600 hover:text-white transition-all"
           >
-            <svg className="w-2.5 h-2.5" viewBox="0 0 6 10">
+            <svg className="w-2.5 h-2.5" viewBox="0 0 6 10" fill="none">
               <path d="M5 1 1 5l4 4" stroke="currentColor" strokeWidth="2" />
             </svg>
           </button>
@@ -29,7 +29,7 @@ const Pagination = ({ totalPaginas, paginaActual, setPaginaActual }) => {
         {/* Botones numerados con puntos suspensivos */}
         {paginas.map((num, i) =>
           num === "..." ? (
-            <li key={`dots-${i}`} className="px-2 text-gray-400">
+            <li key={`dots-${i}`} className="px-2 text-blue-400">
               ...
             </li>
           ) : (
@@ -39,7 +39,7 @@ const Pagination = ({ totalPaginas, paginaActual, setPaginaActual }) => {
                 className={`px-3 py-2 border text-sm rounded-md transition-all ${
                   paginaActual === num
                     ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-[#1f2937] text-gray-300 border-gray-600 hover:bg-[#374151]"
+                    : "bg-transparent text-blue-500 border-blue-600 hover:bg-blue-600 hover:text-white"
                 }`}
               >
                 {num}
@@ -55,9 +55,9 @@ const Pagination = ({ totalPaginas, paginaActual, setPaginaActual }) => {
             onClick={() =>
               setPaginaActual((prev) => Math.min(prev + 1, totalPaginas))
             }
-            className="px-3 py-2 bg-[#1f2937] text-white border border-gray-600 rounded-r-lg disabled:opacity-50 hover:bg-[#374151]"
+            className="px-3 py-2 bg-transparent text-blue-500 border border-blue-500 rounded-r-lg disabled:opacity-50 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all"
           >
-            <svg className="w-2.5 h-2.5" viewBox="0 0 6 10">
+            <svg className="w-2.5 h-2.5" viewBox="0 0 6 10" fill="none">
               <path d="m1 9 4-4-4-4" stroke="currentColor" strokeWidth="2" />
             </svg>
           </button>

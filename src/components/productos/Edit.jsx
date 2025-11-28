@@ -20,6 +20,7 @@ const Edit = () => {
   const [codigoBarra, setCodigoBarra] = useState("");
   const [atajo, setAtajo] = useState("");
   const [unidadVenta, setUnidadVenta] = useState("");
+  const [unidades, setUnidades] = useState([]);
   const [tipoProducto, setTipoProducto] = useState("codigo");
   const navigate = useNavigate();
   const { id } = useParams();
@@ -29,7 +30,18 @@ const Edit = () => {
     const lista = snapshot.docs.map((doc) => doc.data().nombre.toLowerCase());
     setCategorias(lista);
   };
-
+  const getUnidades = async () => {
+    try {
+      const snapshot = await getDocs(collection(db, "unidadVenta"));
+      const lista = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        nombre: doc.data().nombre,
+      }));
+      setUnidades(lista);
+    } catch (error) {
+      console.error("Error al obtener unidades:", error);
+    }
+  };
   const getProductById = async (id) => {
     const productRef = doc(db, "products", id);
     const snap = await getDoc(productRef);
@@ -113,6 +125,7 @@ const Edit = () => {
   useEffect(() => {
     if (id) getProductById(id);
     getCategorias();
+    getUnidades();
   }, [id]);
 
   return (
@@ -235,9 +248,11 @@ const Edit = () => {
               required={tipoProducto === "atajo"}
             >
               <option value="">Selecciona una unidad</option>
-              <option value="unidad">Unidad</option>
-              <option value="kg">Kg</option>
-              <option value="docena">Docena</option>
+              {unidades.map((unidad) => (
+                <option key={unidad.id} value={unidad.nombre}>
+                  {unidad.nombre}
+                </option>
+              ))}
             </Select>
           </div>
 
